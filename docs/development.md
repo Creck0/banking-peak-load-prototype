@@ -96,8 +96,8 @@ k6 run scripts/load-test/baseline.js
 | Var | Default | Description |
 |-----|---------|-------------|
 | `DB_PRIMARY_DSN` | `postgres://...` | Primary PostgreSQL DSN |
-| `DB_REPLICA_DSN` | `postgres://...` | Read replica DSN |
-| `PGBOUNCER_DSN` | `postgres://...` | PgBouncer DSN (use this in app) |
+| `PGBOUNCER_DSN` | `postgres://...` | PgBouncer write-pool DSN (routes to primary) |
+| `PGBOUNCER_READ_DSN` | `postgres://...` | PgBouncer read-pool DSN (routes to replica; required when `DB_READ_REPLICA_ENABLED=true`) |
 
 ### Redis
 | Var | Default | Description |

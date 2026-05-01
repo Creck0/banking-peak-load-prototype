@@ -102,12 +102,12 @@ See [Development Guide](docs/development.md) for the full environment variable r
 make init
 
 # --- Baseline (API + PostgreSQL only) ---
-cp .env.baseline .env
+cp .env.baseline.example .env
 docker compose up -d
 k6 run scripts/load-test/baseline.js
 
 # --- Optimized (+ Redis, RabbitMQ, read replica) ---
-cp .env.optimized .env
+cp .env.optimized.example .env
 docker compose --profile optimized up -d
 k6 run scripts/load-test/optimized.js
 

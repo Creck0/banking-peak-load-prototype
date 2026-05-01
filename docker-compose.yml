@@ -1,0 +1,131 @@
+name: banking-peak-load
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile
+    ports: ["8080:8080"]
+    env_file: .env
+    networks: [banking-net]
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
+        required: false
+      redis:
+        condition: service_healthy
+        required: false
+      rabbitmq:
+        condition: service_healthy
+        required: false
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: banking
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./deployments/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    command: ["postgres", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d banking"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks: [banking-net]
+
+  postgres-replica:
+    image: postgres:16-alpine
+    profiles: [optimized]
+    environment:
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    volumes: [postgres-replica-data:/var/lib/postgresql/data]
+    ports: ["5433:5432"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "
+        chown -R postgres:postgres /var/lib/postgresql/data
+        if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
+          su-exec postgres pg_basebackup -h postgres -U postgres -D /var/lib/postgresql/data -Fp -Xs -R -P
+        fi
+        chmod 700 /var/lib/postgresql/data
+        exec su-exec postgres postgres
+      "
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks: [banking-net]
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.25.1-p0
+    profiles: [optimized]
+    volumes:
+      - ./deployments/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./deployments/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    command: ["pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
+    ports: ["6432:6432"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 6432 -d banking"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks: [banking-net]
+
+  redis:
+    image: redis:7-alpine
+    profiles: [optimized]
+    command: >
+      redis-server --save "" --appendonly no
+      --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks: [banking-net]
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    profiles: [optimized]
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes: [rabbitmq-data:/var/lib/rabbitmq]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [banking-net]
+
+networks:
+  banking-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  postgres-replica-data:
+  rabbitmq-data:

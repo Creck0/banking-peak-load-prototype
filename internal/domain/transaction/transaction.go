@@ -14,12 +14,13 @@ const (
 )
 
 type Transaction struct {
-	ID            string
-	SourceAccount int64
-	DestAccount   int64
-	Amount        float64
-	Status        Status
-	CreatedAt     time.Time
+	ID            string    `db:"id"`
+	SourceAccount int64     `db:"source_account"`
+	DestAccount   int64     `db:"dest_account"`
+	Amount        float64   `db:"amount"`
+	Status        Status    `db:"status"`
+	CreatedAt     time.Time `db:"created_at"`
+	UpdatedAt     time.Time `db:"updated_at"`
 }
 
 type Repository interface {

@@ -6,10 +6,10 @@ import (
 )
 
 type Account struct {
-	ID        int64
-	Name      string
-	Balance   float64
-	UpdatedAt time.Time
+	ID        int64     `db:"id"`
+	Name      string    `db:"name"`
+	Balance   float64   `db:"balance"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 type Repository interface {

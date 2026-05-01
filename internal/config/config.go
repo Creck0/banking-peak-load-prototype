@@ -12,16 +12,16 @@ type Config struct {
 	QueueEnabled          bool    `env:"QUEUE_ENABLED"           envDefault:"false"`
 	RateLimitEnabled      bool    `env:"RATE_LIMIT_ENABLED"      envDefault:"false"`
 	RateLimitRPS          float64 `env:"RATE_LIMIT_RPS"          envDefault:"100"`
-	RateLimitBurst        int     `env:"RATE_LIMIT_BURST"        envDefault:"200"`
+	RateLimitBurst        int     `env:"RATE_LIMIT_BURST"        envDefault:"200"` // TODO: not used yet
 	CircuitBreakerEnabled bool    `env:"CIRCUIT_BREAKER_ENABLED" envDefault:"false"`
 	CBMaxFailures         int     `env:"CB_MAX_FAILURES"         envDefault:"5"`
 	CBTimeoutSeconds      int     `env:"CB_TIMEOUT_SECONDS"      envDefault:"10"`
 	DBReadReplicaEnabled  bool    `env:"DB_READ_REPLICA_ENABLED" envDefault:"false"`
 
 	// Database
-	DBPrimaryDSN string `env:"DB_PRIMARY_DSN"`
-	DBReplicaDSN string `env:"DB_REPLICA_DSN"`
-	PgBouncerDSN string `env:"PGBOUNCER_DSN"`
+	DBPrimaryDSN    string `env:"DB_PRIMARY_DSN"`
+	PgBouncerDSN    string `env:"PGBOUNCER_DSN"`
+	PgBouncerReadDSN string `env:"PGBOUNCER_READ_DSN"`
 
 	// Redis
 	RedisAddr        string `env:"REDIS_ADDR"          envDefault:"redis:6379"`
