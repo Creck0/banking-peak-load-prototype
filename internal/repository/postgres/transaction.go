@@ -44,3 +44,10 @@ func (r *TransactionRepository) GetByID(ctx context.Context, id string) (*transa
 	}
 	return &tx, nil
 }
+
+func (r *TransactionRepository) UpdateStatus(ctx context.Context, id string, status transaction.Status) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE transactions SET status = $1, updated_at = NOW() WHERE id = $2`,
+		string(status), id)
+	return err
+}

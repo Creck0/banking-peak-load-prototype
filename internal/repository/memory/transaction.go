@@ -37,3 +37,15 @@ func (r *TransactionRepository) GetByID(_ context.Context, id string) (*transact
 
 	return &tx, nil
 }
+
+func (r *TransactionRepository) UpdateStatus(ctx context.Context, id string, status transaction.Status) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	tx, ok := r.data[id]
+	if !ok {
+		return fmt.Errorf("transaction %s not found", id)
+	}
+	tx.Status = status
+	r.data[id] = tx
+	return nil
+}

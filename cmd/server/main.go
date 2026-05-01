@@ -20,10 +20,12 @@ import (
 	"github.com/ahargunyllib/banking-peak-load-prototype/internal/repository/memory"
 	pgrepo "github.com/ahargunyllib/banking-peak-load-prototype/internal/repository/postgres"
 	"github.com/ahargunyllib/banking-peak-load-prototype/internal/service"
-	echoprometheus "github.com/labstack/echo-prometheus"
+	"github.com/ahargunyllib/banking-peak-load-prototype/internal/worker"
 	"github.com/jmoiron/sqlx"
+	echoprometheus "github.com/labstack/echo-prometheus"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -45,12 +47,13 @@ func main() {
 	var accountRepo account.Repository = memory.NewAccountRepository()
 	var txRepo transaction.Repository = memory.NewTransactionRepository()
 
+	var db *sqlx.DB
 	if cfg.DBPrimaryDSN != "" {
 		appDSN := cfg.DBPrimaryDSN
 		if cfg.PgBouncerDSN != "" {
 			appDSN = cfg.PgBouncerDSN
 		}
-		db, err := infrapostgres.New(appDSN)
+		db, err = infrapostgres.New(appDSN)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to connect to postgres: %v\n", err)
 			os.Exit(1)
@@ -72,24 +75,26 @@ func main() {
 		txRepo = pgrepo.NewTransactionRepository(db, replicaDB)
 	}
 
+	var redisClient *redis.Client
 	if cfg.CacheEnabled && cfg.RedisAddr != "" {
-		_, err := infraredis.New(cfg.RedisAddr)
+		redisClient, err = infraredis.New(cfg.RedisAddr)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "warning: redis unavailable: %v\n", err)
 		}
 	}
 
+	var queueClient *infraqueue.Client
 	if cfg.QueueEnabled && cfg.QueueURL != "" {
-		qClient, err := infraqueue.New(cfg.QueueURL)
+		queueClient, err = infraqueue.New(cfg.QueueURL)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "warning: queue unavailable: %v\n", err)
 		} else {
-			defer qClient.Close()
+			defer queueClient.Close()
 		}
 	}
 
 	accountSvc := service.NewAccountService(accountRepo)
-	txSvc := service.NewTransactionService(txRepo)
+	txSvc := service.NewTransactionService(txRepo, db, queueClient, redisClient)
 
 	accountHandler := handler.NewAccountHandler(accountSvc)
 	txHandler := handler.NewTransactionHandler(txSvc)
@@ -99,7 +104,7 @@ func main() {
 	e.Use(middleware.BodyLimit(2_097_152)) // 2MB
 	e.Use(middleware.ContextTimeout(60 * time.Second))
 	// e.Use(middleware.CORS("https://example.com")) // Allow CORS from frontend domain in real deployment
-	e.Use(middleware.CSRF())
+	// e.Use(middleware.CSRF()) // Enable in real deployment with proper config (cookie name, same-site, etc.)
 	e.Use(middleware.Decompress())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
 		Level: 5,
@@ -121,6 +126,11 @@ func main() {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM) // start shutdown process on signal
 	defer cancel()
+
+	if cfg.QueueEnabled && queueClient != nil && db != nil {
+		w := worker.NewWorker(db, queueClient, redisClient, txRepo)
+		go w.Start(ctx, 10) // 10 concurrent consumers
+	}
 
 	sc := echo.StartConfig{
 		Address:         fmt.Sprintf(":%d", cfg.AppPort),

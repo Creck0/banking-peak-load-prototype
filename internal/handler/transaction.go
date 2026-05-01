@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
+	"github.com/ahargunyllib/banking-peak-load-prototype/internal/domain/transaction"
 	"github.com/ahargunyllib/banking-peak-load-prototype/internal/handler/request"
 	"github.com/ahargunyllib/banking-peak-load-prototype/internal/service"
 	"github.com/labstack/echo/v5"
@@ -34,10 +36,21 @@ func (h *TransactionHandler) CreateTransaction(c *echo.Context) error {
 		Amount:        req.Amount,
 	})
 	if err != nil {
+		if errors.Is(err, service.ErrInsufficientFunds) {
+			return echo.NewHTTPError(http.StatusUnprocessableEntity, "insufficient funds")
+		}
+		if errors.Is(err, service.ErrAccountNotFound) {
+			return echo.NewHTTPError(http.StatusUnprocessableEntity, "account not found")
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to save transaction"})
 	}
 
-	return c.JSON(http.StatusCreated, map[string]any{
+	statusCode := http.StatusCreated // 201 for sync (completed)
+	if tx.Status == transaction.StatusPending {
+		statusCode = http.StatusAccepted // 202 for async (pending)
+	}
+
+	return c.JSON(statusCode, map[string]any{
 		"id":             tx.ID,
 		"source_account": tx.SourceAccount,
 		"dest_account":   tx.DestAccount,

@@ -1,6 +1,10 @@
 package queue
 
-import amqp "github.com/rabbitmq/amqp091-go"
+import (
+	"context"
+
+	amqp "github.com/rabbitmq/amqp091-go"
+)
 
 type Client struct {
 	Conn    *amqp.Connection
@@ -37,4 +41,13 @@ func New(url string) (*Client, error) {
 func (c *Client) Close() {
 	_ = c.Channel.Close()
 	_ = c.Conn.Close()
+}
+
+func (c *Client) Publish(ctx context.Context, queue string, body []byte) error {
+	return c.Channel.PublishWithContext(ctx, "", queue, false, false,
+		amqp.Publishing{
+			ContentType:  "application/json",
+			Body:         body,
+			DeliveryMode: amqp.Persistent,
+		})
 }

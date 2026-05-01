@@ -26,4 +26,5 @@ type Transaction struct {
 type Repository interface {
 	Save(ctx context.Context, tx *Transaction) error
 	GetByID(ctx context.Context, id string) (*Transaction, error)
+	UpdateStatus(ctx context.Context, id string, status Status) error
 }
