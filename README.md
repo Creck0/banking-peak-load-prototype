@@ -120,7 +120,7 @@ docker compose --profile optimized --profile observability up -d
 Seed dummy data (100K accounts, 1M transactions):
 
 ```bash
-go run ./seeds/main.go --accounts=100000 --transactions=1000000
+make seed
 ```
 
 ## Makefile Commands

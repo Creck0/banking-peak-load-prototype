@@ -1,7 +1,7 @@
 # Implementation Plan
 
 ## Phase 1 — Baseline
-- [ ] Seed data generator (`seeds/main.go`) — 100K accounts, 1M transactions
+- [x] Seed data generator (`seeds/main.go`) — 100K accounts, 1M transactions
 - [ ] Real balance validation + atomic debit/credit on transaction creation
 - [ ] k6 baseline load test script (`scripts/load-test/baseline.js`)
 

@@ -1,4 +1,4 @@
-.PHONY: dev lint fmt test build \
+.PHONY: dev lint fmt test build seed \
         up up-optimized down logs ps
 
 init:
@@ -17,6 +17,9 @@ test:
 
 build:
 	go build -o bin/app cmd/server/main.go
+
+seed:
+	DB_PRIMARY_DSN=postgres://postgres:postgres@localhost:5432/banking?sslmode=disable go run ./cmd/seeds/main.go
 
 up:
 	cp .env.baseline.example .env
