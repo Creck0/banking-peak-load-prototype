@@ -6,8 +6,8 @@
 - [ ] k6 baseline load test script (`scripts/load-test/baseline.js`)
 
 ## Phase 2 — Optimizations
-- [ ] Redis cache-aside for GET /accounts/:id/balance and GET /transactions/:id/status
-- [ ] Cache invalidation on writes
+- [x] Redis cache-aside for GET /accounts/:id/balance and GET /transactions/:id/status
+- [x] Cache invalidation on writes
 - [ ] RabbitMQ producer — publish transaction to queue (return 202 + pending)
 - [ ] RabbitMQ consumer / worker — process queued transactions, update DB
 - [ ] Circuit breaker middleware (`sony/gobreaker`) wrapping DB/cache/queue calls

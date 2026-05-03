@@ -84,6 +84,7 @@ func (w *Worker) process(ctx context.Context, msg amqp.Delivery) {
 	}
 
 	w.invalidateBalanceCache(ctx, payload.SourceAccount, payload.DestAccount)
+	w.invalidateTxStatusCache(ctx, payload.TXID)
 	_ = msg.Ack(false)
 }
 
@@ -144,4 +145,11 @@ func (w *Worker) invalidateBalanceCache(ctx context.Context, accountIDs ...int64
 		keys[i] = fmt.Sprintf("balance:%d", id)
 	}
 	w.redis.Del(ctx, keys...)
+}
+
+func (w *Worker) invalidateTxStatusCache(ctx context.Context, txID string) {
+	if w.redis == nil {
+		return
+	}
+	w.redis.Del(ctx, fmt.Sprintf("tx_status:%s", txID))
 }

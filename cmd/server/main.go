@@ -93,8 +93,8 @@ func main() {
 		}
 	}
 
-	accountSvc := service.NewAccountService(accountRepo)
-	txSvc := service.NewTransactionService(txRepo, db, queueClient, redisClient)
+	accountSvc := service.NewAccountService(accountRepo, redisClient, cfg.CacheBalanceTTL)
+	txSvc := service.NewTransactionService(txRepo, db, queueClient, redisClient, cfg.CacheTxStatusTTL)
 
 	accountHandler := handler.NewAccountHandler(accountSvc)
 	txHandler := handler.NewTransactionHandler(txSvc)

@@ -38,10 +38,11 @@ type TransactionService interface {
 }
 
 type transactionService struct {
-	repo  transaction.Repository
-	db    *sqlx.DB      // nil → memory mode (no balance ops)
-	queue *queue.Client // nil → sync path
-	redis *redis.Client // nil → no cache invalidation
+	repo        transaction.Repository
+	db          *sqlx.DB      // nil → memory mode (no balance ops)
+	queue       *queue.Client // nil → sync path
+	redis       *redis.Client // nil → no caching
+	txStatusTTL time.Duration // TTL for terminal tx status cache entries
 }
 
 func NewTransactionService(
@@ -49,8 +50,9 @@ func NewTransactionService(
 	db *sqlx.DB,
 	q *queue.Client,
 	rdb *redis.Client,
+	txStatusTTL time.Duration,
 ) TransactionService {
-	return &transactionService{repo: repo, db: db, queue: q, redis: rdb}
+	return &transactionService{repo: repo, db: db, queue: q, redis: rdb, txStatusTTL: txStatusTTL}
 }
 
 func (s *transactionService) CreateTransaction(ctx context.Context, input CreateTransactionInput) (*transaction.Transaction, error) {
@@ -197,13 +199,45 @@ func (s *transactionService) invalidateBalanceCache(ctx context.Context, account
 	s.redis.Del(ctx, keys...)
 }
 
+// invalidateTxStatusCache removes the cached status entry for a transaction.
+func (s *transactionService) invalidateTxStatusCache(ctx context.Context, txID string) {
+	if s.redis == nil {
+		return
+	}
+	s.redis.Del(ctx, fmt.Sprintf("tx_status:%s", txID))
+}
+
 func (s *transactionService) GetTransactionStatus(ctx context.Context, id string) (*transaction.Transaction, error) {
 	logger.Set(ctx, "transaction_id", id)
+
+	if s.redis != nil {
+		key := fmt.Sprintf("tx_status:%s", id)
+		if cached, err := s.redis.Get(ctx, key).Bytes(); err == nil {
+			var tx transaction.Transaction
+			if err := json.Unmarshal(cached, &tx); err == nil {
+				logger.Set(ctx, "cache_hit", true)
+				logger.Set(ctx, "transaction_status", tx.Status)
+				return &tx, nil
+			}
+		}
+		logger.Set(ctx, "cache_hit", false)
+	}
 
 	tx, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		logger.Set(ctx, "transaction_error", err.Error())
 		return nil, err
+	}
+
+	if s.redis != nil {
+		// Pending entries expire quickly; terminal states get the full TTL.
+		ttl := s.txStatusTTL
+		if tx.Status == transaction.StatusPending {
+			ttl = 2 * time.Second
+		}
+		if data, err := json.Marshal(tx); err == nil {
+			s.redis.Set(ctx, fmt.Sprintf("tx_status:%s", id), data, ttl)
+		}
 	}
 
 	logger.Set(ctx, "transaction_status", tx.Status)

@@ -1,6 +1,10 @@
 package config
 
-import "github.com/caarlos0/env/v11"
+import (
+	"time"
+
+	"github.com/caarlos0/env/v11"
+)
 
 type Config struct {
 	// Application
@@ -24,9 +28,9 @@ type Config struct {
 	PgBouncerReadDSN string `env:"PGBOUNCER_READ_DSN"`
 
 	// Redis
-	RedisAddr        string `env:"REDIS_ADDR"          envDefault:"redis:6379"`
-	CacheBalanceTTL  string `env:"CACHE_BALANCE_TTL"   envDefault:"10s"`
-	CacheTxStatusTTL string `env:"CACHE_TX_STATUS_TTL" envDefault:"30s"`
+	RedisAddr        string        `env:"REDIS_ADDR"          envDefault:"redis:6379"`
+	CacheBalanceTTL  time.Duration `env:"CACHE_BALANCE_TTL"   envDefault:"10s"`
+	CacheTxStatusTTL time.Duration `env:"CACHE_TX_STATUS_TTL" envDefault:"30s"`
 
 	// Queue
 	QueueURL     string `env:"QUEUE_URL"`
