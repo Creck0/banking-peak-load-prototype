@@ -11,7 +11,7 @@
 - [x] RabbitMQ producer — publish transaction to queue (return 202 + pending)
 - [x] RabbitMQ consumer / worker — process queued transactions, update DB
 - [x] Circuit breaker middleware (`sony/gobreaker`) wrapping DB/cache/queue calls
-- [ ] Route reads to PostgreSQL replica when `DB_READ_REPLICA_ENABLED=true`
+- [x] Route reads to PostgreSQL replica when `DB_READ_REPLICA_ENABLED=true`
 
 ## Phase 3 — Observability
 - [ ] Prometheus scrape config (`deployments/prometheus/prometheus.yml`)
