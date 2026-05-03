@@ -129,7 +129,7 @@ func main() {
 
 	if cfg.QueueEnabled && queueClient != nil && db != nil {
 		w := worker.NewWorker(db, queueClient, redisClient, txRepo)
-		go w.Start(ctx, 10) // 10 concurrent consumers
+		go w.Start(ctx, cfg.QueueWorkers)
 	}
 
 	sc := echo.StartConfig{

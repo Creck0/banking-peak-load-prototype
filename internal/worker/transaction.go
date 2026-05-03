@@ -31,7 +31,7 @@ func NewWorker(db *sqlx.DB, q *queue.Client, rdb *redis.Client, repo transaction
 // Start spawns `concurrency` goroutines consuming from "transactions" queue.
 // It blocks until ctx is cancelled.
 func (w *Worker) Start(ctx context.Context, concurrency int) {
-	msgs, err := w.queue.Channel.Consume("transactions", "", false, false, false, false, nil)
+	msgs, err := w.queue.Consume("transactions")
 	if err != nil {
 		logger.L.Error("worker: failed to start consumer", "error", err)
 		return
