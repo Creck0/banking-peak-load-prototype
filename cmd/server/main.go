@@ -113,6 +113,7 @@ func main() {
 		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(cfg.RateLimitRPS)))
 	}
 	e.Use(middleware.Recover())
+	e.Use(appmw.CircuitBreaker(cfg))
 	e.Use(middleware.RequestID()) // sets X-Request-ID header; must run before RequestLogger
 	e.Use(appmw.RequestLogger())  // wide event canonical log line
 	e.Use(middleware.Secure())
