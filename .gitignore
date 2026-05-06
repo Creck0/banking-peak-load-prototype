@@ -41,3 +41,7 @@ tmp/
 # Coverage reports
 coverage.out
 coverage.html
+terraform/.terraform/
+terraform/**/.terraform/
+terraform/**/*.tfstate
+terraform/**/*.tfstate.backup
