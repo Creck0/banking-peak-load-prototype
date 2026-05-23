@@ -1,9 +1,0 @@
-aws_region  = "ap-southeast-1"
-project     = "banking-peak-load"
-environment = "staging"
-key_name    = ""  # isi dengan nama EC2 key pair kamu kalau mau SSH
-
-# Jangan commit file ini ke git!
-# db_password dan mq_password diisi via env var:
-# export TF_VAR_db_password="your-password"
-# export TF_VAR_mq_password="your-password"
