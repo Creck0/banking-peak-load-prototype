@@ -47,3 +47,13 @@ terraform/**/*.tfstate
 terraform/**/*.tfstate.backup
 terraform/updated-creds.sh
 *.sh
+# Mengabaikan folder cache terraform beserta isinya
+.terraform/
+
+# Mengabaikan file state lokal (karena bahaya mengandung kredensial)
+*.tfstate
+*.tfstate.*
+
+# Mengabaikan variabel rahasia
+*.tfvars
+.terraform.lock.hcl
